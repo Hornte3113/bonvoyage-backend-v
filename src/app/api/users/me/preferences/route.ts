@@ -53,7 +53,6 @@ export async function PUT(req: Request) {
   const { userId: clerkId } = await auth()
   if (!clerkId) return err('Unauthorized', 401)
 
-  // Validar body con Zod
   const body   = await req.json()
   const parsed = UpdatePreferencesSchema.safeParse(body)
   if (!parsed.success) {
@@ -106,7 +105,6 @@ export async function PUT(req: Request) {
 
     if (!result.rows[0]) return err('Preferences not found', 404)
 
-    // Transformar y validar respuesta de la DB con Zod
     const preferences = PreferencesResponseSchema.parse(result.rows[0])
     return ok(preferences)
 
