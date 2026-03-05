@@ -222,3 +222,29 @@ function buildTemplate(type: NotificationType, data: Record<string, unknown>): {
 // ============================================================
 //  FUNCIÓN PRINCIPAL DE ENVÍO
 // ============================================================
+
+export async function sendEmail(options: SendEmailOptions): Promise<SendEmailResult> {
+  const { to, notification_type, template_data } = options
+
+  try {
+    const { subject, html } = buildTemplate(notification_type, template_data)
+
+    const response = await resend.emails.send({
+      from:    FROM_EMAIL,
+      to:      [to],
+      subject,
+      html,
+    })
+
+    if (response.error) {
+      return { success: false, error: response.error.message }
+    }
+
+    return { success: true, messageId: response.data?.id }
+
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : 'Unknown error'
+    console.error(`[email.service] Failed to send ${notification_type} to ${to}:`, message)
+    return { success: false, error: message }
+  }
+}
