@@ -88,3 +88,137 @@ function primaryButton(text: string, url: string): string {
   </div>`
 }
 
+
+function buildTemplate(type: NotificationType, data: Record<string, unknown>): {
+  subject: string
+  html:    string
+} {
+  const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? 'https://bonvoyage.app'
+
+  switch (type) {
+
+    case 'WELCOME':
+      return {
+        subject: '¡Bienvenido a Bon Voyage! ✈️',
+        html: baseTemplate(`
+          <h2 style="color:#1B2A4A;margin-top:0;">
+            ¡Hola, ${data.first_name}! 👋
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Tu cuenta en <strong>Bon Voyage</strong> está lista.
+            Ahora puedes planificar tus viajes desde un solo lugar —
+            vuelos, restaurantes, puntos de interés y servicios esenciales,
+            todo en tu itinerario personalizado.
+          </p>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Empieza explorando el mapa interactivo y crea tu primer viaje.
+          </p>
+          ${primaryButton('Ir a Bon Voyage', `${APP_URL}/dashboard`)}
+          <p style="color:#8896a5;font-size:13px;text-align:center;margin-top:8px;">
+            Si no creaste esta cuenta, ignora este mensaje.
+          </p>
+        `),
+      }
+
+    case 'DRAFT_REMINDER':
+      return {
+        subject: `Tu viaje "${data.trip_name}" te está esperando 🗺️`,
+        html: baseTemplate(`
+          <h2 style="color:#1B2A4A;margin-top:0;">
+            ¿Sigues planeando tu viaje?
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Tu borrador <strong>"${data.trip_name}"</strong> lleva
+            23 días sin cambios. ¡No dejes que tus planes queden a medias!
+          </p>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Tienes 7 días antes de que se archive automáticamente.
+          </p>
+          ${primaryButton('Continuar planeando', `${APP_URL}/trips/${data.trip_id}`)}
+        `),
+      }
+
+    case 'ARCHIVE_WARNING':
+      return {
+        subject: `⚠️ Tu viaje "${data.trip_name}" se archivará pronto`,
+        html: baseTemplate(`
+          <h2 style="color:#e53e3e;margin-top:0;">
+            Tu borrador está por archivarse
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            El viaje <strong>"${data.trip_name}"</strong> lleva 30 días
+            inactivo. En <strong>7 días</strong> se archivará automáticamente.
+          </p>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Ábrelo para evitar que se archive.
+          </p>
+          ${primaryButton('Continuar planeando', `${APP_URL}/trips/${data.trip_id}`)}
+        `),
+      }
+
+    case 'TRIP_CONFIRMED':
+      return {
+        subject: `¡Viaje confirmado! "${data.trip_name}" 🎉`,
+        html: baseTemplate(`
+          <h2 style="color:#1B2A4A;margin-top:0;">
+            ¡Tu viaje está confirmado! 🎉
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            <strong>"${data.trip_name}"</strong> ha sido confirmado.
+            Fecha de salida: <strong>${data.start_date}</strong>.
+          </p>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Te enviaremos recordatorios 30, 7 y 1 día antes de tu viaje.
+          </p>
+          ${primaryButton('Ver itinerario', `${APP_URL}/trips/${data.trip_id}`)}
+        `),
+      }
+
+    case 'TRIP_UPCOMING':
+      return {
+        subject: `✈️ Tu viaje "${data.trip_name}" es en ${data.days_until} días`,
+        html: baseTemplate(`
+          <h2 style="color:#1B2A4A;margin-top:0;">
+            ¡Tu viaje se acerca! 🌍
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            <strong>"${data.trip_name}"</strong> comienza en
+            <strong>${data.days_until} días</strong>
+            (${data.start_date}).
+          </p>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Revisa tu itinerario y asegúrate de tener todo listo.
+          </p>
+          ${primaryButton('Ver itinerario', `${APP_URL}/trips/${data.trip_id}`)}
+        `),
+      }
+
+    case 'PASSWORD_RESET':
+      return {
+        subject: 'Restablece tu contraseña de Bon Voyage',
+        html: baseTemplate(`
+          <h2 style="color:#1B2A4A;margin-top:0;">
+            Restablece tu contraseña
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Recibimos una solicitud para restablecer tu contraseña.
+            Haz clic en el botón para continuar. El enlace expira en 1 hora.
+          </p>
+          ${primaryButton('Restablecer contraseña', data.reset_url as string)}
+          <p style="color:#8896a5;font-size:13px;text-align:center;margin-top:8px;">
+            Si no solicitaste esto, ignora este mensaje.
+          </p>
+        `),
+      }
+
+    default:
+      return {
+        subject: 'Notificación de Bon Voyage',
+        html:    baseTemplate(`<p>Tienes una nueva notificación.</p>`),
+      }
+  }
+}
+
+// ============================================================
+//  FUNCIÓN PRINCIPAL DE ENVÍO
+// ============================================================
