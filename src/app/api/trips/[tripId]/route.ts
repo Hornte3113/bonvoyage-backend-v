@@ -116,7 +116,6 @@ export async function PATCH(req: Request, { params }: Params) {
     const userId = await resolveUserId(clerkId)
     if (!userId) return err('User not found', 404)
 
-    // Validar que el viaje pertenece al usuario y está en DRAFT
     const existing = await db.query(
       `SELECT status FROM trips WHERE trip_id = $1 AND user_id = $2`,
       [tripId, userId]

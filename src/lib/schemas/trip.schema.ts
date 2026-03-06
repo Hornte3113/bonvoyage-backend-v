@@ -6,7 +6,7 @@ export const CreateTripSchema = z.object({
   destination_id: z.string().uuid().optional(),
   start_date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format must be YYYY-MM-DD'),
   end_date:       z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format must be YYYY-MM-DD'),
-  total_budget:   z.number().positive().optional(),
+  total_budget:   z.coerce.number().positive().optional(),
   currency:       z.enum(['USD', 'EUR', 'MXN', 'JPY', 'GBP', 'THB']).optional(),
 }).refine(
   (data) => new Date(data.end_date) >= new Date(data.start_date),
@@ -25,7 +25,7 @@ export const UpdateTripSchema = z.object({
   trip_name:    z.string().min(1).max(255).optional(),
   start_date:   z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
   end_date:     z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
-  total_budget: z.number().positive().optional(),
+  total_budget: z.coerce.number().positive().optional(),
   currency:     z.enum(['USD', 'EUR', 'MXN', 'JPY', 'GBP', 'THB']).optional(),
   is_favorite:  z.boolean().optional(),
 }).refine(
@@ -74,7 +74,7 @@ export const TripResponseSchema = z.object({
   start_date:       z.coerce.date(),
   end_date:         z.coerce.date(),
   status:           z.enum(['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
-  total_budget:     z.number().nullable(),
+  total_budget:     z.coerce.number().nullable(),
   currency:         z.string(),
   is_favorite:      z.boolean(),
   confirmed_at:     z.coerce.date().nullable(),
@@ -83,8 +83,8 @@ export const TripResponseSchema = z.object({
   destination_name: z.string().nullable(),
   destination_city: z.string().nullable(),
   destination_image:z.string().nullable(),
-  total_days:       z.number(),
-  total_items:      z.number(),
+  total_days:       z.coerce.number(),
+  total_items:      z.coerce.number(),
 })
 
 export const ItineraryDaySchema = z.object({
