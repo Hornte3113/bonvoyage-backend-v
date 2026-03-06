@@ -27,5 +27,23 @@ export async function searchHotels(params: HotelSearchParams) {
   url.searchParams.append('checkin', checkIn);
   url.searchParams.append('checkout', checkOut);
 
-  
+  try {
+    const response = await fetch(url.toString(), {
+      method: 'GET',
+      headers: {
+        'x-rapidapi-host': 'sky-scrapper.p.rapidapi.com',
+        'x-rapidapi-key': process.env.RAPIDAPI_KEY as string, 
+      },
+    });
+
+    if (!response.ok) {
+      throw new Error(`RapidAPI Hotel error: ${response.status}`);
+    }
+
+    const data = await response.json();
+    return data; 
+  } catch (error) {
+    console.error('Error fetching hotels from Sky Scrapper:', error);
+    throw error;
+  }
 }
