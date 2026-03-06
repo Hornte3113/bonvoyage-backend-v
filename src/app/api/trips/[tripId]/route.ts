@@ -13,7 +13,7 @@ type Params = { params: Promise<{ tripId: string }> }
 
 // ------------------------------------------------------------
 //  GET /api/trips/[tripId]
-//  Retorna el viaje con todos sus días e ítems
+//  Retorna el viaje con todos sus días e ítems enriquecidos
 // ------------------------------------------------------------
 export async function GET(_req: Request, { params }: Params) {
   const { userId: clerkId } = await auth()
@@ -25,7 +25,6 @@ export async function GET(_req: Request, { params }: Params) {
     const userId = await resolveUserId(clerkId)
     if (!userId) return err('User not found', 404)
 
-    // Obtener viaje (validando ownership)
     const tripResult = await db.query(
       `SELECT
          t.trip_id, t.user_id, t.destination_id, t.trip_name,
@@ -52,7 +51,6 @@ export async function GET(_req: Request, { params }: Params) {
 
     const trip = TripResponseSchema.parse(tripResult.rows[0])
 
-    // Obtener días con sus ítems
     const daysResult = await db.query(
       `SELECT
          id_.day_id,
@@ -72,13 +70,23 @@ export async function GET(_req: Request, { params }: Params) {
                'notes',               ii.notes,
                'status',              ii.status,
                'place_reference_id',  ii.place_reference_id,
-               'flight_reference_id', ii.flight_reference_id
+               'flight_reference_id', ii.flight_reference_id,
+               'place_name',          pr.name,
+               'place_category',      pr.category,
+               'place_latitude',      pr.latitude,
+               'place_longitude',     pr.longitude,
+               'place_rating',        pr.rating,
+               'place_address',       pr.extended_data->>'address',
+               'place_photo_url',     pr.extended_data->>'photo_url',
+               'place_price_level',   pr.extended_data->>'price_level',
+               'place_external_id',   pr.external_id
              ) ORDER BY ii.order_position
            ) FILTER (WHERE ii.item_id IS NOT NULL),
            '[]'
          ) AS items
        FROM itinerary_days id_
-       LEFT JOIN itinerary_items ii ON ii.day_id = id_.day_id
+       LEFT JOIN itinerary_items  ii ON ii.day_id       = id_.day_id
+       LEFT JOIN place_references pr ON pr.reference_id = ii.place_reference_id
        WHERE id_.trip_id = $1
        GROUP BY id_.day_id
        ORDER BY id_.day_number`,
@@ -162,7 +170,6 @@ export async function PATCH(req: Request, { params }: Params) {
 // ------------------------------------------------------------
 //  DELETE /api/trips/[tripId]
 //  Elimina el viaje (solo DRAFT o CANCELLED)
-//  Llama a fn_delete_trip
 // ------------------------------------------------------------
 export async function DELETE(_req: Request, { params }: Params) {
   const { userId: clerkId } = await auth()
@@ -174,10 +181,7 @@ export async function DELETE(_req: Request, { params }: Params) {
     const userId = await resolveUserId(clerkId)
     if (!userId) return err('User not found', 404)
 
-    await db.query(
-      `SELECT fn_delete_trip($1, $2)`,
-      [tripId, userId]
-    )
+    await db.query(`SELECT fn_delete_trip($1, $2)`, [tripId, userId])
 
     return ok({ deleted: true, trip_id: tripId })
 
