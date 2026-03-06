@@ -40,12 +40,22 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json();
-    const { 
+    const {
       trip_name, start_date, end_date, currency, total_budget,
-      destination_name, destination_country, latitude, longitude 
+      destination_name, destination_country, destination_city, city, latitude, longitude
     } = body;
 
-    if (!trip_name || !destination_name || !start_date || !end_date) {
+    const normalizedDestinationName = typeof destination_name === 'string'
+      ? destination_name.trim()
+      : '';
+    const normalizedDestinationCity = typeof destination_city === 'string'
+      ? destination_city.trim()
+      : typeof city === 'string'
+        ? city.trim()
+        : '';
+    const safeDestinationCity = normalizedDestinationCity || normalizedDestinationName || 'Unknown';
+
+    if (!trip_name || !normalizedDestinationName || !start_date || !end_date) {
       return NextResponse.json({ error: "Faltan campos obligatorios" }, { status: 400 });
     }
 
@@ -53,18 +63,19 @@ export async function POST(req: NextRequest) {
     
     const existingDest = await db.query(
       'SELECT destination_id FROM destinations WHERE name = $1 LIMIT 1',
-      [destination_name]
+      [normalizedDestinationName]
     );
 
     if (existingDest.rows.length > 0) {
       destId = existingDest.rows[0].destination_id;
     } else {
       const newDest = await db.query(`
-        INSERT INTO destinations (name, country, latitude, longitude)
-        VALUES ($1, $2, $3, $4)
+        INSERT INTO destinations (name, city, country, latitude, longitude)
+        VALUES ($1, $2, $3, $4, $5)
         RETURNING destination_id;
       `, [
-        destination_name, 
+        normalizedDestinationName,
+        safeDestinationCity,
         destination_country || 'Unknown', 
         latitude || null, 
         longitude || null
