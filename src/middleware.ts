@@ -11,5 +11,10 @@ export default clerkMiddleware(async (auth, req) => {
 })
 
 export const config = {
-  matcher: ['/api/(.*)'],
-}
+  matcher: [
+    // Omitir archivos internos de Next.js y estáticos (imagenes, etc)
+    '/((?!_next|[^?]*\\.(?:html?|css|js(?!on)|jpe?g|webp|png|gif|svg|ttf|woff2?|ico|csv|docx?|xlsx?|zip|webmanifest)).*)',
+    // Siempre ejecutar para rutas de API y trpc
+    '/(api|trpc)(.*)',
+  ],
+};
