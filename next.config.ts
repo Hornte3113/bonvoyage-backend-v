@@ -5,7 +5,6 @@ const nextConfig = {
   async headers() {
     return [
       {
-        // Esto aplica a todas tus rutas de la API
         source: "/api/:path*",
         headers: [
           { key: "Access-Control-Allow-Credentials", value: "true" },
