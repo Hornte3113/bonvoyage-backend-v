@@ -2,6 +2,65 @@ import { NextRequest, NextResponse } from "next/server";
 import  db  from "@/lib/db";
 import { auth, currentUser } from "@clerk/nextjs/server";
 
+export async function GET() {
+  try {
+    const { userId } = await auth();
+
+    if (!userId) {
+      return NextResponse.json({ error: "No autorizado" }, { status: 401 });
+    }
+
+    const userQuery = await db.query(
+      'SELECT user_id FROM user_identities WHERE provider_id = $1',
+      [userId]
+    );
+
+    if (userQuery.rows.length === 0) {
+      return NextResponse.json([], { status: 200 });
+    }
+
+    const internalUserId = userQuery.rows[0].user_id;
+
+    const tripsResult = await db.query(
+      `SELECT
+         t.trip_id,
+         t.user_id,
+         t.destination_id,
+         t.trip_name,
+         t.start_date,
+         t.end_date,
+         t.status,
+         t.total_budget,
+         t.currency,
+         t.is_favorite,
+         t.confirmed_at,
+         t.created_at,
+         t.updated_at,
+         d.name AS destination_name,
+         d.city AS destination_city,
+         d.image_url AS destination_image,
+         (t.end_date - t.start_date + 1) AS total_days,
+         COUNT(ii.item_id) FILTER (WHERE ii.status <> 'CANCELLED') AS total_items
+       FROM trips t
+       LEFT JOIN destinations d ON d.destination_id = t.destination_id
+       LEFT JOIN itinerary_days id_ ON id_.trip_id = t.trip_id
+       LEFT JOIN itinerary_items ii ON ii.day_id = id_.day_id
+       WHERE t.user_id = $1
+       GROUP BY t.trip_id, d.name, d.city, d.image_url
+       ORDER BY t.is_favorite DESC, t.start_date DESC, t.created_at DESC`,
+      [internalUserId]
+    );
+
+    return NextResponse.json(tripsResult.rows, { status: 200 });
+  } catch (error: any) {
+    console.error(" Error al listar viajes:", error.message);
+    return NextResponse.json(
+      { error: "Error interno del servidor", details: error.message },
+      { status: 500 }
+    );
+  }
+}
+
 export async function POST(req: NextRequest) {
   try {
     const { userId } = await auth();
