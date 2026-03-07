@@ -104,6 +104,22 @@ export const ItineraryDaySchema = z.object({
     status:              z.enum(['PLANNED', 'CONFIRMED', 'CANCELLED']),
     place_reference_id:  z.string().uuid().nullable(),
     flight_reference_id: z.string().uuid().nullable(),
+    // enriched place fields (joined from place_references)
+    place_name:          z.string().nullable().optional(),
+    place_category:      z.string().nullable().optional(),
+    place_latitude:      z.coerce.number().nullable().optional(),
+    place_longitude:     z.coerce.number().nullable().optional(),
+    place_rating:        z.coerce.number().nullable().optional(),
+    place_address:       z.string().nullable().optional(),
+    place_photo_url:     z.string().nullable().optional(),
+    place_price_level:   z.string().nullable().optional(),
+    place_external_id:   z.string().nullable().optional(),
+    // enriched flight fields (joined from flight_references)
+    flight_airline_code:        z.string().nullable().optional(),
+    flight_origin_airport:      z.string().nullable().optional(),
+    flight_destination_airport: z.string().nullable().optional(),
+    flight_departure_time:      z.string().nullable().optional(),
+    flight_price:               z.coerce.number().nullable().optional(),
   })).default([]),
 })
 

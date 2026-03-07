@@ -77,16 +77,22 @@ export async function GET(_req: Request, { params }: Params) {
                'place_longitude',     pr.longitude,
                'place_rating',        pr.rating,
                'place_address',       pr.extended_data->>'address',
-               'place_photo_url',     pr.extended_data->>'photo_url',
+               'place_photo_url',     COALESCE(pr.extended_data->>'photo_url', pr.extended_data->>'imageUrl'),
                'place_price_level',   pr.extended_data->>'price_level',
-               'place_external_id',   pr.external_id
+               'place_external_id',   pr.external_id,
+               'flight_airline_code',        fr.airline_code,
+               'flight_origin_airport',      fr.origin_airport,
+               'flight_destination_airport', fr.destination_airport,
+               'flight_departure_time',      fr.departure_time,
+               'flight_price',               fr.price
              ) ORDER BY ii.order_position
            ) FILTER (WHERE ii.item_id IS NOT NULL),
            '[]'
          ) AS items
        FROM itinerary_days id_
-       LEFT JOIN itinerary_items  ii ON ii.day_id       = id_.day_id
-       LEFT JOIN place_references pr ON pr.reference_id = ii.place_reference_id
+       LEFT JOIN itinerary_items   ii ON ii.day_id        = id_.day_id
+       LEFT JOIN place_references  pr ON pr.reference_id  = ii.place_reference_id
+       LEFT JOIN flight_references fr ON fr.reference_id  = ii.flight_reference_id
        WHERE id_.trip_id = $1
        GROUP BY id_.day_id
        ORDER BY id_.day_number`,
