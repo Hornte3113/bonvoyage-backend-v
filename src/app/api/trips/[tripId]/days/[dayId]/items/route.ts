@@ -71,8 +71,8 @@ export async function POST(req: Request, { params }: Params) {
   if (!clerkId) return err('Unauthorized', 401)
 
   const { tripId, dayId } = await params
-  const body               = await req.json()
-  const parsed             = AddItineraryItemSchema.safeParse(body)
+  const body = await req.json()
+  const parsed = AddItineraryItemSchema.safeParse(body)
   if (!parsed.success) {
     return err(parsed.error.flatten().fieldErrors as unknown as string, 400)
   }
@@ -81,7 +81,6 @@ export async function POST(req: Request, { params }: Params) {
     const userId = await resolveUserId(clerkId)
     if (!userId) return err('User not found', 404)
 
-    // Validar ownership del viaje
     const tripExists = await db.query(
       `SELECT status FROM trips WHERE trip_id = $1 AND user_id = $2`,
       [tripId, userId]
@@ -91,28 +90,65 @@ export async function POST(req: Request, { params }: Params) {
       return err('Cannot add items to a cancelled trip', 400)
     }
 
-    const data = parsed.data
+    const data = parsed.data;
+    
+    let placeRefId: string | null = null;
+    let flightRefId: string | null = null;
+    let startTime: string | null = null;
+    let endTime: string | null = null;
+
+    if (data.item_type === 'PLACE') {
+      placeRefId = data.place_reference_id;
+      startTime = data.start_time ?? null;
+      endTime = data.end_time ?? null;
+
+      if (!placeRefId && body.place_id) {
+        const extendedData = JSON.stringify({
+          photo_url: body.photo_url || null,
+          address: body.address || null
+        });
+
+        const placeResult = await db.query(
+          `INSERT INTO place_references (external_id, category, name, latitude, longitude, rating, api_source, extended_data)
+           VALUES ($1, $2, $3, $4, $5, $6, 'frontend', $7)
+           ON CONFLICT (external_id, category) 
+           DO UPDATE SET name = EXCLUDED.name, extended_data = EXCLUDED.extended_data
+           RETURNING reference_id;`,
+          [
+            body.place_id, 
+            'POI',
+            body.item_name || 'Lugar sin nombre', 
+            body.latitude || 0, 
+            body.longitude || 0, 
+            body.rating || 0,
+            extendedData
+          ]
+        );
+        placeRefId = placeResult.rows[0].reference_id;
+      }
+    } else if (data.item_type === 'FLIGHT') {
+      flightRefId = data.flight_reference_id;
+    }
 
     const result = await db.query<{ item_id: string }>(
       `SELECT fn_add_itinerary_item(
-         $1, $2, $3, $4, $5, $6::time, $7::time, $8, $9
+         $1::uuid, $2::uuid, $3::varchar, $4::uuid, $5::uuid, $6::time, $7::time, $8::numeric, $9::text
        ) AS item_id`,
       [
         tripId,
         dayId,
         data.item_type,
-        data.item_type === 'PLACE'  ? data.place_reference_id  : null,
-        data.item_type === 'FLIGHT' ? data.flight_reference_id : null,
-        data.item_type === 'PLACE'  && 'start_time' in data ? data.start_time ?? null : null,
-        data.item_type === 'PLACE'  && 'end_time'   in data ? data.end_time   ?? null : null,
-        'estimated_cost' in data ? data.estimated_cost ?? null : null,
-        'notes'          in data ? data.notes          ?? null : null,
+        placeRefId,
+        flightRefId,
+        startTime,
+        endTime,
+        data.estimated_cost ?? null,
+        data.notes ?? null,
       ]
     )
 
     const itemId = result.rows[0].item_id
 
-    // Retornar el ítem creado
     const itemResult = await db.query(
       `SELECT
          item_id, day_id, item_type,
@@ -127,12 +163,8 @@ export async function POST(req: Request, { params }: Params) {
     const item = ItineraryItemResponseSchema.parse(itemResult.rows[0])
     return ok(item, 201)
 
-  } catch (error: unknown) {
+  } catch (error: any) {
     console.error('[POST /trips/:tripId/days/:dayId/items]', error)
-    if (error instanceof Error) {
-      if (error.message.includes('No itinerary day found')) return err(error.message, 400)
-      if (error.message.includes('does not belong to trip')) return err(error.message, 400)
-    }
-    return err('Internal server error', 500)
+    return err(error.message || 'Error en la base de datos', 500)
   }
 }
