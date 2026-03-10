@@ -4,7 +4,7 @@ import { auth } from "@clerk/nextjs/server";
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: { tripId: string } }
+  { params }: { params: Promise<{ tripId: string }> }
 ) {
   try {
     const { userId } = await auth();
@@ -17,11 +17,13 @@ export async function PATCH(
       return NextResponse.json({ error: "Segundos inválidos" }, { status: 400 });
     }
 
+    const { tripId } = await params;
+
     await db.query(`
       UPDATE trips 
       SET planning_time_seconds = planning_time_seconds + $1
       WHERE trip_id = $2
-    `, [seconds, params.tripId]);
+    `, [seconds, tripId]);
 
     return NextResponse.json({ success: true });
   } catch (error: any) {
