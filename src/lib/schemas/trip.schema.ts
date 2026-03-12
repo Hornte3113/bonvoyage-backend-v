@@ -76,6 +76,7 @@ export const TripResponseSchema = z.object({
   status:           z.enum(['DRAFT', 'CONFIRMED', 'COMPLETED', 'CANCELLED']),
   total_budget:     z.coerce.number().nullable(),
   currency:         z.string(),
+  planning_time_seconds: z.coerce.number().int().nonnegative(),
   is_favorite:      z.boolean(),
   confirmed_at:     z.coerce.date().nullable(),
   created_at:       z.coerce.date(),
