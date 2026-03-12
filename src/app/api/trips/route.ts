@@ -32,6 +32,7 @@ export async function GET() {
          t.status,
          t.total_budget,
          t.currency,
+         COALESCE(t.planning_time_seconds, 0) AS planning_time_seconds,
          t.is_favorite,
          t.confirmed_at,
          t.created_at,
