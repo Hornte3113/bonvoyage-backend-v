@@ -1,5 +1,1 @@
-import { ok } from '@/lib/response'
-
-export function GET() {
-  return ok({ status: 'ok' })
-}
+export { GET } from '@/app/api/v1/health/route'
