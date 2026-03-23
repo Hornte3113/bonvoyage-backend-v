@@ -19,6 +19,7 @@ export type NotificationType =
   | 'ARCHIVE_WARNING'
   | 'TRIP_UPCOMING'
   | 'TRIP_CONFIRMED'
+  | 'TRIP_COMPLETED'
 
 export interface SendEmailOptions {
   to:                string
@@ -228,6 +229,23 @@ function buildTemplate(type: NotificationType, data: Record<string, unknown>): {
       return {
         subject: 'Notificación de Bon Voyage',
         html:    baseTemplate(`<p>Tienes una nueva notificación.</p>`),
+      }
+      case 'TRIP_COMPLETED':
+      return {
+        subject: `¡Espero que hayas disfrutado tu viaje a "${data.trip_name}"! `,
+        html: baseTemplate(`
+          <h2 style="color:#1B2A4A;margin-top:0;">
+            ¡Bienvenido de vuelta!
+          </h2>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            Tu viaje <strong>"${data.trip_name}"</strong> ha sido marcado como completado. 
+            Esperamos que hayas creado recuerdos increíbles.
+          </p>
+          <p style="color:#4a5568;line-height:1.7;font-size:15px;">
+            ¿Listo para tu próxima aventura? Entra a Bon Voyage para empezar a planear tu siguiente destino.
+          </p>
+          ${primaryButton('Planear nuevo viaje', `${APP_URL}/dashboard`)}
+        `),
       }
   }
 }
