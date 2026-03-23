@@ -33,6 +33,7 @@ export async function GET(
     const ticket = TicketResponseSchema.parse(result.rows[0])
     return ok(ticket)
   } catch (e: any) {
+    console.error('[GET /trips/:tripId/ticket]', e)
     return err(e.message, 500)
   }
 }
