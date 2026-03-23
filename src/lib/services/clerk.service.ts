@@ -17,7 +17,7 @@ const CreateUserSchema = z.object({
 export type Provider       = z.infer<typeof ProviderSchema>
 export type CreateUserData = z.infer<typeof CreateUserSchema>
 
-export async function resolveUserId(clerkId: string): Promise<string | null> {
+export async function resolveUserId(clerkId: string, email?: string): Promise<string | null> {
   const result = await db.query<{ user_id: string }>(
     `SELECT u.user_id
      FROM users u
@@ -27,7 +27,25 @@ export async function resolveUserId(clerkId: string): Promise<string | null> {
      LIMIT 1`,
     [clerkId]
   )
-  return result.rows[0]?.user_id ?? null
+
+  if (result.rows[0]?.user_id) {
+    return result.rows[0].user_id
+  }
+
+  // Fallback for accounts not linked by provider_id (e.g. legacy/local rows).
+  if (email) {
+    const byEmail = await db.query<{ user_id: string }>(
+      `SELECT user_id
+       FROM users
+       WHERE email = $1
+         AND deleted_at IS NULL
+       LIMIT 1`,
+      [email]
+    )
+    return byEmail.rows[0]?.user_id ?? null
+  }
+
+  return null
 }
 
 export async function findUserByEmail(email: string) {

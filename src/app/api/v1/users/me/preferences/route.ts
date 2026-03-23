@@ -1,4 +1,4 @@
-import { auth } from '@clerk/nextjs/server'
+import { auth, currentUser } from '@clerk/nextjs/server'
 import db from '@/lib/db'
 import { ok, err } from '@/lib/response'
 import { resolveUserId } from '@/lib/services/clerk.service'
@@ -15,7 +15,9 @@ export async function GET() {
   if (!clerkId) return err('Unauthorized', 401)
 
   try {
-    const userId = await resolveUserId(clerkId)
+    const clerkUser = await currentUser()
+    const email = clerkUser?.emailAddresses?.[0]?.emailAddress
+    const userId = await resolveUserId(clerkId, email)
     if (!userId) return err('User not found', 404)
 
     const result = await db.query(
@@ -69,7 +71,9 @@ export async function PUT(req: Request) {
   } = parsed.data
 
   try {
-    const userId = await resolveUserId(clerkId)
+    const clerkUser = await currentUser()
+    const email = clerkUser?.emailAddresses?.[0]?.emailAddress
+    const userId = await resolveUserId(clerkId, email)
     if (!userId) return err('User not found', 404)
 
     const result = await db.query(
