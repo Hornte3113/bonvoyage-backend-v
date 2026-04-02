@@ -23,7 +23,7 @@ export async function GET() {
         (SELECT COUNT(*) FROM tickets WHERE budget_status = 'WARNING')                             AS tickets_advertencia,
         (SELECT COUNT(*) FROM wishlist)                                                            AS total_wishlist,
         (SELECT COUNT(*) FROM trip_tags)                                                           AS total_tags_asignados,
-        (SELECT COUNT(*) FROM vw_hipotesis_validacion WHERE resultado_hipotesis = 'HIPOTESIS VALIDADA') AS hipotesis_validadas,
+        (SELECT COUNT(*) FROM vw_hipotesis_validacion WHERE resultado_hipotesis = 'HIPÓTESIS VALIDADA') AS hipotesis_validadas,
         (SELECT COUNT(*) FROM vw_hipotesis_validacion)                                             AS hipotesis_total,
         (SELECT ROUND(AVG(horas_planificacion), 2) FROM vw_hipotesis_validacion)                   AS promedio_horas_planificacion
     `)
